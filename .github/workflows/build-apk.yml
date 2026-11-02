@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Native APK
 on: [push, workflow_dispatch]
 
 jobs:
@@ -14,36 +14,28 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Extract Project ZIP
         run: |
-          mkdir -p src_project
-          unzip -o *.zip -d src_project || true
-
-      - name: Build APK via Cordova Native Command
-        run: |
-          npm install -g cordova
-          cordova create build_folder com.hdrengine.app HDREngine
-          cd build_folder
-          cordova platform add android --save
-          
-          # Menyalin aset HTML/JS dari ZIP ke folder build
-          if [ -f ../src_project/index.html ]; then
-            cp -r ../src_project/* www/
+          mkdir -p native_project
+          unzip -o *.zip -d native_project || true
+          # Memindahkan file ke root jika terbungkus folder ekstra
+          if [ -d native_project/app ]; then
+            cp -r native_project/* .
           else
-            cp -r ../index.html www/ || true
-            cp -r ../package.json www/ || true
+            cp -r native_project/*/* . || true
           fi
-          
-          # Kompilasi langsung ke file APK
-          cordova build android --debug
+
+      - name: Grant Execute Permission for Gradle
+        run: chmod +x gradlew || true
+
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug || gradle assembleDebug
 
       - name: Upload APK Result
         uses: actions/upload-artifact@v4
         with:
-          name: HDREngine-Debug-APK
-          path: build_folder/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          name: HDREngine-Native-APK
+          path: app/build/outputs/apk/debug/*.apk
