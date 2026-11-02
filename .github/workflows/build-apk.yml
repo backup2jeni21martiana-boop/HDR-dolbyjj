@@ -17,37 +17,33 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
       - name: Extract Project ZIP
         run: |
           mkdir -p src_project
           unzip -o *.zip -d src_project || true
 
-      - name: Setup Cordova and Platforms
+      - name: Build APK via Cordova Native Command
         run: |
           npm install -g cordova
           cordova create build_folder com.hdrengine.app HDREngine
           cd build_folder
           cordova platform add android --save
-
-      - name: Inject Web Assets
-        run: |
-          if [ -f src_project/index.html ]; then
-            cp -r src_project/* build_folder/www/
+          
+          # Menyalin aset HTML/JS dari ZIP ke folder build
+          if [ -f ../src_project/index.html ]; then
+            cp -r ../src_project/* www/
           else
-            cp -r index.html build_folder/www/ || true
-            cp -r package.json build_folder/www/ || true
+            cp -r ../index.html www/ || true
+            cp -r ../package.json www/ || true
           fi
-
-      - name: Build Android APK via Gradle
-        uses: subosito/compile-android-apk@v1
-        with:
-          project-path: build_folder/platforms/android
+          
+          # Kompilasi langsung ke file APK
+          cordova build android --debug
 
       - name: Upload APK Result
         uses: actions/upload-artifact@v4
         with:
           name: HDREngine-Debug-APK
           path: build_folder/platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          
