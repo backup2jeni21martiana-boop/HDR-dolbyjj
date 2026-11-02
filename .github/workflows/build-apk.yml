@@ -15,18 +15,25 @@ jobs:
 
       - name: Extract Project ZIP
         run: |
-          unzip *.zip -d project_files || true
-          mv project_files/* . || true
-
-      - name: Install Cordova Compiler
-        run: npm install -g cordova
-
-      - name: Create Android Platform
+          mkdir -p src_project
+          unzip -o *.zip -d src_project || true
+          
+      - name: Setup Cordova Project
         run: |
+          npm install -g cordova
           cordova create build_folder com.hdrengine.app HDREngine
           cd build_folder
-          cp -r ../index.html www/ || cp -r ../* www/ || true
           cordova platform add android
+          
+      - name: Inject Web Assets
+        run: |
+          # Menyalin aset dengan aman apakah berada di root zip atau di dalam subfolder
+          if [ -f src_project/index.html ]; then
+            cp -r src_project/* build_folder/www/
+          else
+            cp -r index.html build_folder/www/ || true
+            cp -r package.json build_folder/www/ || true
+          fi
 
       - name: Compile to APK
         run: |
